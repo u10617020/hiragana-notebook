@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f8f1e7" />
-    <meta name="description" content="適合初學者的手機平假名手寫練習簿" />
+    <meta name="description" content="平假名、片假名與主題單詞的手機手寫練習簿" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="假名手帖" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/icon.svg" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=2" />
     <title>假名手帖</title>
   </head>
   <body>
@@ -28,38 +28,46 @@
 
         <section class="progress-card" aria-label="學習進度">
           <div class="progress-card__copy">
-            <span class="progress-card__label">學習進度</span>
-            <strong><span id="mastered-count">0</span><small> / 46 個已會</small></strong>
+            <span class="progress-card__label">總書寫紀錄</span>
+            <strong><span id="total-written">0</span><small> 次</small></strong>
           </div>
-          <div class="progress-ring" id="progress-ring" aria-hidden="true">
-            <span id="progress-percent">0%</span>
-          </div>
+          <div class="daily-goal"><strong id="daily-count">0 / 5</strong><span>今日練習</span></div>
         </section>
-
-        <button id="random-practice" class="primary-action" type="button">
-          <span class="primary-action__icon" aria-hidden="true">↝</span>
-          <span><strong>隨機複習</strong><small>優先練習還不熟的字</small></span>
-          <span aria-hidden="true">›</span>
-        </button>
+        <p id="streak-note" class="streak-note">完成一頁，開始今天的練習紀錄。</p>
 
         <div class="section-heading">
           <div>
-            <p class="eyebrow">基本 46 音</p>
-            <h2>選一行開始練習</h2>
-          </div>
-          <div class="legend" aria-label="狀態說明">
-            <span><i class="dot dot--mastered"></i>會了</span>
-            <span><i class="dot dot--review"></i>再練</span>
+            <p class="eyebrow">選擇你的課程</p>
+            <h2>今天想寫什麼？</h2>
           </div>
         </div>
-
-        <div id="row-list" class="row-list"></div>
+        <div id="course-list" class="course-list"></div>
         <p class="privacy-note">你的進度只會保存在這台裝置上。</p>
+      </section>
+
+      <section id="catalog-view" class="view" hidden aria-labelledby="catalog-title">
+        <header class="practice-nav">
+          <button id="catalog-back" class="icon-button" type="button" aria-label="返回首頁">←</button>
+          <div><span id="catalog-nav-title" class="practice-nav__mode">選擇練習</span></div>
+          <span aria-hidden="true"></span>
+        </header>
+        <p id="catalog-eyebrow" class="eyebrow">課程</p>
+        <h1 id="catalog-title" class="catalog-title">選一行開始</h1>
+        <p id="catalog-description" class="catalog-description"></p>
+        <div class="catalog-progress"><span id="catalog-progress-text">0 / 46 個已會</span><span id="catalog-written-text">已寫 0 次</span></div>
+        <div class="catalog-progress-bar"><span id="catalog-progress-fill"></span></div>
+        <button id="random-practice" class="primary-action" type="button">
+          <span class="primary-action__icon" aria-hidden="true">↝</span>
+          <span><strong>隨機複習</strong><small>優先練習還不熟的內容</small></span>
+          <span aria-hidden="true">›</span>
+        </button>
+        <div class="section-heading"><div><p class="eyebrow">課程內容</p><h2 id="catalog-section-title">選一行開始練習</h2></div></div>
+        <div id="row-list" class="row-list"></div>
       </section>
 
       <section id="practice-view" class="view" hidden aria-labelledby="practice-kana">
         <header class="practice-nav">
-          <button id="back-button" class="icon-button" type="button" aria-label="返回選字">←</button>
+          <button id="back-button" class="icon-button" type="button" aria-label="返回課程">←</button>
           <div>
             <span id="mode-label" class="practice-nav__mode">あ行練習</span>
             <span id="position-label" class="practice-nav__position">1 / 5</span>
@@ -69,12 +77,13 @@
 
         <section class="kana-focus">
           <div>
-            <p class="eyebrow">今天練這個字</p>
+            <p id="focus-eyebrow" class="eyebrow">今天練這個字</p>
             <div class="kana-focus__title">
               <h1 id="practice-kana">あ</h1>
               <div>
                 <span id="practice-romaji" class="romaji">a</span>
-                <span id="practice-count" class="practice-count">練習 0 次</span>
+                <span id="practice-meaning" class="practice-meaning" hidden></span>
+                <span id="practice-count" class="practice-count">已寫 0 次</span>
               </div>
             </div>
           </div>
@@ -113,7 +122,7 @@
 
         <section id="next-actions" class="next-actions" hidden>
           <button id="repeat-button" class="secondary-action" type="button">再寫一遍</button>
-          <button id="next-button" class="primary-action primary-action--compact" type="button">下一個字 <span aria-hidden="true">›</span></button>
+          <button id="next-button" class="primary-action primary-action--compact" type="button">下一個 <span aria-hidden="true">›</span></button>
         </section>
       </section>
     </main>
@@ -138,6 +147,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <noscript>這個工具需要啟用 JavaScript 才能使用。</noscript>
-    <script src="app.js" defer></script>
+    <script src="app.js?v=2" defer></script>
   </body>
 </html>

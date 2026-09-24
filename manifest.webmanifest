@@ -1,7 +1,7 @@
 {
-  "name": "假名手帖－平假名手寫練習",
+  "name": "假名手帖－日文手寫練習",
   "short_name": "假名手帖",
-  "description": "用描字與默寫記住基本 46 個平假名。",
+  "description": "用手寫學習平假名、片假名與主題單詞。",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",

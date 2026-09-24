@@ -20,18 +20,73 @@ const ALL_KANA = KANA_ROWS.flatMap((row) => row.kana.map(([character, romaji]) =
   rowLabel: row.label
 })));
 
-const STORAGE_KEY = "hiragana-copybook:v1";
-const STORAGE_VERSION = 1;
+const KATAKANA_ROWS = KANA_ROWS.map((row, rowIndex) => {
+  const characters = [
+    "アイウエオ", "カキクケコ", "サシスセソ", "タチツテト", "ナニヌネノ",
+    "ハヒフヘホ", "マミムメモ", "ヤユヨ", "ラリルレロ", "ワヲン"
+  ][rowIndex];
+  return {
+    id: row.id,
+    label: `${characters[0]}行`,
+    kana: row.kana.map(([, romaji], index) => [characters[index], romaji])
+  };
+});
+
+const WORD_GROUPS = [
+  { id: "food", label: "食物", icon: "🍙", words: [
+    ["ごはん", "gohan", "飯"], ["パン", "pan", "麵包"], ["りんご", "ringo", "蘋果"],
+    ["たまご", "tamago", "雞蛋"], ["すし", "sushi", "壽司"], ["おちゃ", "ocha", "茶"],
+    ["ミルク", "miruku", "牛奶"], ["ケーキ", "kēki", "蛋糕"], ["みず", "mizu", "水"],
+    ["さかな", "sakana", "魚"]
+  ] },
+  { id: "animals", label: "動物", icon: "🐈", words: [
+    ["ねこ", "neko", "貓"], ["いぬ", "inu", "狗"], ["とり", "tori", "鳥"],
+    ["うさぎ", "usagi", "兔子"], ["くま", "kuma", "熊"], ["さる", "saru", "猴子"],
+    ["うま", "uma", "馬"], ["ぞう", "zō", "大象"], ["きつね", "kitsune", "狐狸"],
+    ["かめ", "kame", "烏龜"]
+  ] },
+  { id: "daily", label: "日常", icon: "🏠", words: [
+    ["おはよう", "ohayō", "早安"], ["こんにちは", "konnichiwa", "你好"],
+    ["ありがとう", "arigatō", "謝謝"], ["さようなら", "sayōnara", "再見"],
+    ["いえ", "ie", "家"], ["がっこう", "gakkō", "學校"],
+    ["ともだち", "tomodachi", "朋友"], ["ほん", "hon", "書"],
+    ["でんしゃ", "densha", "電車"], ["くるま", "kuruma", "汽車"]
+  ] }
+];
+
+const ALL_WORDS = WORD_GROUPS.flatMap((group) => group.words.map(([character, romaji, meaning]) => ({
+  character, romaji, meaning, groupId: group.id, groupLabel: group.label
+})));
+const ALL_KATAKANA = KATAKANA_ROWS.flatMap((row) => row.kana.map(([character, romaji]) => ({
+  character, romaji, rowId: row.id, rowLabel: row.label
+})));
+
+const STORAGE_KEY = "kana-notebook:v2";
+const LEGACY_STORAGE_KEY = "hiragana-copybook:v1";
+const STORAGE_VERSION = 2;
 const TRACE_CELLS = 3;
 const TOTAL_CELLS = 8;
+const WORD_TRACE_CELLS = 2;
+const WORD_TOTAL_CELLS = 5;
 
 const elements = {
   homeView: document.querySelector("#home-view"),
+  catalogView: document.querySelector("#catalog-view"),
   practiceView: document.querySelector("#practice-view"),
+  courseList: document.querySelector("#course-list"),
   rowList: document.querySelector("#row-list"),
-  masteredCount: document.querySelector("#mastered-count"),
-  progressPercent: document.querySelector("#progress-percent"),
-  progressRing: document.querySelector("#progress-ring"),
+  totalWritten: document.querySelector("#total-written"),
+  dailyCount: document.querySelector("#daily-count"),
+  streakNote: document.querySelector("#streak-note"),
+  catalogBack: document.querySelector("#catalog-back"),
+  catalogTitle: document.querySelector("#catalog-title"),
+  catalogNavTitle: document.querySelector("#catalog-nav-title"),
+  catalogEyebrow: document.querySelector("#catalog-eyebrow"),
+  catalogDescription: document.querySelector("#catalog-description"),
+  catalogProgressText: document.querySelector("#catalog-progress-text"),
+  catalogWrittenText: document.querySelector("#catalog-written-text"),
+  catalogProgressFill: document.querySelector("#catalog-progress-fill"),
+  catalogSectionTitle: document.querySelector("#catalog-section-title"),
   randomPractice: document.querySelector("#random-practice"),
   backButton: document.querySelector("#back-button"),
   resetPageTop: document.querySelector("#reset-page-top"),
@@ -39,8 +94,11 @@ const elements = {
   positionLabel: document.querySelector("#position-label"),
   practiceKana: document.querySelector("#practice-kana"),
   practiceRomaji: document.querySelector("#practice-romaji"),
+  practiceMeaning: document.querySelector("#practice-meaning"),
+  focusEyebrow: document.querySelector("#focus-eyebrow"),
   practiceCount: document.querySelector("#practice-count"),
   speakButton: document.querySelector("#speak-button"),
+  statusTitle: document.querySelector("#status-title"),
   markReview: document.querySelector("#mark-review"),
   markMastered: document.querySelector("#mark-mastered"),
   practiceGrid: document.querySelector("#practice-grid"),
@@ -59,7 +117,8 @@ const elements = {
 };
 
 let progress = loadProgress();
-let currentKana = ALL_KANA[0];
+let course = "hiragana";
+let currentItem = ALL_KANA[0];
 let practiceMode = { type: "row", rowId: "a", index: 0 };
 let pads = [];
 let sessionCompleted = false;
@@ -67,29 +126,59 @@ let deferredInstallPrompt = null;
 let toastTimer = 0;
 
 function defaultProgress() {
-  return { version: STORAGE_VERSION, kana: {} };
+  return { version: STORAGE_VERSION, hiragana: {}, katakana: {}, words: {}, activity: {} };
 }
 
 function loadProgress() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY));
     if (!saved || typeof saved !== "object") return defaultProgress();
 
     const migrated = defaultProgress();
-    const sourceKana = saved.kana && typeof saved.kana === "object" ? saved.kana : {};
-    ALL_KANA.forEach(({ character }) => {
-      const source = sourceKana[character];
-      if (!source || typeof source !== "object") return;
-      const entry = {};
-      if (source.status === "mastered" || source.status === "review") entry.status = source.status;
-      entry.count = Number.isFinite(source.count) && source.count > 0 ? Math.floor(source.count) : 0;
-      if (typeof source.lastPracticed === "string") entry.lastPracticed = source.lastPracticed;
-      migrated.kana[character] = entry;
+    ["hiragana", "katakana", "words"].forEach((kind) => {
+      const sourceItems = kind === "hiragana" && saved.kana ? saved.kana : saved[kind];
+      if (!sourceItems || typeof sourceItems !== "object") return;
+      getItems(kind).forEach(({ character }) => {
+        const source = sourceItems[character];
+        if (!source || typeof source !== "object") return;
+        const entry = {
+          count: validCount(source.count),
+          written: Number.isFinite(source.written) ? validCount(source.written) : validCount(source.count) * (kind === "words" ? WORD_TOTAL_CELLS : TOTAL_CELLS)
+        };
+        if (source.status === "mastered" || source.status === "review") entry.status = source.status;
+        if (typeof source.lastPracticed === "string") entry.lastPracticed = source.lastPracticed;
+        migrated[kind][character] = entry;
+      });
     });
+    if (saved.activity && typeof saved.activity === "object") {
+      Object.entries(saved.activity).forEach(([date, count]) => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(date)) migrated.activity[date] = validCount(count);
+      });
+    }
     return migrated;
   } catch {
     return defaultProgress();
   }
+}
+
+function validCount(value) {
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+
+function getItems(kind = course) {
+  return kind === "katakana" ? ALL_KATAKANA : kind === "words" ? ALL_WORDS : ALL_KANA;
+}
+
+function getRows() {
+  return course === "katakana" ? KATAKANA_ROWS : KANA_ROWS;
+}
+
+function getTotalCells() {
+  return course === "words" ? WORD_TOTAL_CELLS : TOTAL_CELLS;
+}
+
+function getTraceCells() {
+  return course === "words" ? WORD_TRACE_CELLS : TRACE_CELLS;
 }
 
 function saveProgress() {
@@ -100,15 +189,102 @@ function saveProgress() {
   }
 }
 
-function getKanaProgress(character) {
-  if (!progress.kana[character]) progress.kana[character] = { count: 0 };
-  return progress.kana[character];
+function getItemProgress(character, kind = course) {
+  if (!progress[kind][character]) progress[kind][character] = { count: 0, written: 0 };
+  return progress[kind][character];
+}
+
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function currentStreak() {
+  const date = new Date();
+  if (!progress.activity[localDateKey(date)]) date.setDate(date.getDate() - 1);
+  let days = 0;
+  while (progress.activity[localDateKey(date)] > 0) {
+    days += 1;
+    date.setDate(date.getDate() - 1);
+  }
+  return days;
 }
 
 function renderHome() {
-  elements.rowList.replaceChildren();
+  const courses = [
+    { id: "hiragana", icon: "あ", title: "平假名", subtitle: "基礎 46 音 · 從這裡開始", total: 46 },
+    { id: "katakana", icon: "ア", title: "片假名", subtitle: "基礎 46 音 · 認識外來語", total: 46 },
+    { id: "words", icon: "語", title: "單詞練習", subtitle: "食物、動物、日常 · 30 個單詞", total: ALL_WORDS.length }
+  ];
+  elements.courseList.replaceChildren();
+  courses.forEach((item) => {
+    const mastered = getItems(item.id).filter(({ character }) => progress[item.id][character]?.status === "mastered").length;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "course-card";
+    button.innerHTML = `<span class="course-card__icon"></span><span class="course-card__copy"><strong></strong><small></small><span class="course-card__progress"></span></span><span class="course-card__arrow" aria-hidden="true">›</span>`;
+    button.querySelector(".course-card__icon").textContent = item.icon;
+    button.querySelector("strong").textContent = item.title;
+    button.querySelector("small").textContent = item.subtitle;
+    button.querySelector(".course-card__progress").textContent = `${mastered} / ${item.total} 個已會`;
+    button.addEventListener("click", () => openCatalog(item.id));
+    elements.courseList.append(button);
+  });
+  elements.totalWritten.textContent = ["hiragana", "katakana", "words"].reduce((total, kind) =>
+    total + Object.values(progress[kind]).reduce((sum, entry) => sum + validCount(entry.written), 0), 0).toLocaleString();
+  const today = validCount(progress.activity[localDateKey()]);
+  const streak = currentStreak();
+  elements.dailyCount.textContent = `${Math.min(today, 5)} / 5`;
+  elements.streakNote.textContent = streak > 0
+    ? `連續練習 ${streak} 天${today >= 5 ? " · 今天的 5 頁目標完成！" : " · 今天再完成幾頁吧！"}`
+    : "完成一頁，開始今天的練習紀錄。";
+}
 
-  KANA_ROWS.forEach((row) => {
+function renderCatalog() {
+  elements.rowList.replaceChildren();
+  const isWords = course === "words";
+  const title = course === "hiragana" ? "平假名" : course === "katakana" ? "片假名" : "單詞練習";
+  elements.catalogTitle.textContent = title;
+  elements.catalogNavTitle.textContent = title;
+  elements.catalogEyebrow.textContent = isWords ? "3 個生活主題" : "基本 46 音";
+  elements.catalogDescription.textContent = isWords ? "先看意思與讀音，再動手寫完整單詞。" : "選一個字開始描寫與默寫。";
+  elements.catalogSectionTitle.textContent = isWords ? "選一個主題與單詞" : "選一行開始練習";
+  const items = getItems();
+  const mastered = items.filter(({ character }) => progress[course][character]?.status === "mastered").length;
+  const written = items.reduce((sum, { character }) => sum + validCount(progress[course][character]?.written), 0);
+  elements.catalogProgressText.textContent = `${mastered} / ${items.length} 個已會`;
+  elements.catalogWrittenText.textContent = `已寫 ${written.toLocaleString()} 次`;
+  elements.catalogProgressFill.style.width = `${(mastered / items.length) * 100}%`;
+
+  if (isWords) {
+    elements.rowList.classList.add("row-list--words");
+    WORD_GROUPS.forEach((group) => {
+      const section = document.createElement("section");
+      section.className = "word-group";
+      const heading = document.createElement("h3");
+      heading.textContent = `${group.icon} ${group.label}`;
+      const list = document.createElement("div");
+      list.className = "word-list";
+      group.words.forEach(([character, romaji, meaning], index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "word-button";
+        button.innerHTML = `<span class="word-button__main"></span><span class="word-button__meaning"></span><span class="word-button__count"></span>`;
+        button.querySelector(".word-button__main").textContent = character;
+        button.querySelector(".word-button__meaning").textContent = `${meaning} · ${romaji}`;
+        button.querySelector(".word-button__count").textContent = `${validCount(progress.words[character]?.written)} 次`;
+        const status = progress.words[character]?.status;
+        if (status) button.dataset.status = status;
+        button.addEventListener("click", () => startWordPractice(group.id, index));
+        list.append(button);
+      });
+      section.append(heading, list);
+      elements.rowList.append(section);
+    });
+    return;
+  }
+
+  elements.rowList.classList.remove("row-list--words");
+  getRows().forEach((row) => {
     const article = document.createElement("article");
     article.className = `kana-row${row.kana.length < 5 ? " kana-row--short" : ""}`;
 
@@ -126,8 +302,9 @@ function renderHome() {
       button.className = "kana-button";
       button.textContent = character;
       button.setAttribute("aria-label", `練習 ${character}`);
-      const status = progress.kana[character]?.status;
+      const status = progress[course][character]?.status;
       if (status) button.dataset.status = status;
+      button.title = `已寫 ${validCount(progress[course][character]?.written)} 次`;
       button.addEventListener("click", () => startRowPractice(row.id, index));
       characters.append(button);
     });
@@ -136,32 +313,45 @@ function renderHome() {
     elements.rowList.append(article);
   });
 
-  const mastered = ALL_KANA.filter(({ character }) => progress.kana[character]?.status === "mastered").length;
-  const percent = Math.round((mastered / ALL_KANA.length) * 100);
-  elements.masteredCount.textContent = mastered;
-  elements.progressPercent.textContent = `${percent}%`;
-  elements.progressRing.style.setProperty("--progress", `${percent * 3.6}deg`);
+}
+
+function openCatalog(kind, { fromHistory = false } = {}) {
+  course = kind;
+  renderCatalog();
+  elements.homeView.hidden = true;
+  elements.practiceView.hidden = true;
+  elements.catalogView.hidden = false;
+  window.scrollTo({ top: 0, behavior: "auto" });
+  if (!fromHistory) history.pushState({ view: "catalog", course }, "", `#${course}`);
 }
 
 function startRowPractice(rowId, index = 0) {
-  const row = KANA_ROWS.find((item) => item.id === rowId) || KANA_ROWS[0];
+  const row = getRows().find((item) => item.id === rowId) || getRows()[0];
   const safeIndex = Math.max(0, Math.min(index, row.kana.length - 1));
   practiceMode = { type: "row", rowId: row.id, index: safeIndex };
-  setCurrentKana(row.kana[safeIndex][0]);
+  setCurrentItem(row.kana[safeIndex][0]);
+  showPractice();
+}
+
+function startWordPractice(groupId, index = 0) {
+  const group = WORD_GROUPS.find((item) => item.id === groupId) || WORD_GROUPS[0];
+  practiceMode = { type: "word-group", groupId: group.id, index };
+  setCurrentItem(group.words[index][0]);
   showPractice();
 }
 
 function startRandomPractice() {
   practiceMode = { type: "random" };
-  currentKana = chooseRandomKana(null);
+  currentItem = chooseRandomItem(null);
   buildPracticePage();
   showPractice();
 }
 
-function chooseRandomKana(previousCharacter) {
-  const candidates = ALL_KANA.filter(({ character }) => character !== previousCharacter || ALL_KANA.length === 1);
+function chooseRandomItem(previousCharacter) {
+  const items = getItems();
+  const candidates = items.filter(({ character }) => character !== previousCharacter || items.length === 1);
   const weighted = candidates.map((item) => {
-    const status = progress.kana[item.character]?.status;
+    const status = progress[course][item.character]?.status;
     return { item, weight: status === "review" ? 5 : status === "mastered" ? 1 : 3 };
   });
   const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
@@ -173,16 +363,17 @@ function chooseRandomKana(previousCharacter) {
   return weighted[weighted.length - 1].item;
 }
 
-function setCurrentKana(character) {
-  currentKana = ALL_KANA.find((item) => item.character === character) || ALL_KANA[0];
+function setCurrentItem(character) {
+  currentItem = getItems().find((item) => item.character === character) || getItems()[0];
   buildPracticePage();
 }
 
 function showPractice() {
   elements.homeView.hidden = true;
+  elements.catalogView.hidden = true;
   elements.practiceView.hidden = false;
   window.scrollTo({ top: 0, behavior: "auto" });
-  if (!history.state?.practice) history.pushState({ practice: true }, "", "#practice");
+  history.pushState({ view: "practice", course }, "", `#practice-${course}`);
 }
 
 function showHome({ fromHistory = false } = {}) {
@@ -190,9 +381,16 @@ function showHome({ fromHistory = false } = {}) {
   pads = [];
   renderHome();
   elements.practiceView.hidden = true;
+  elements.catalogView.hidden = true;
   elements.homeView.hidden = false;
   window.scrollTo({ top: 0, behavior: "auto" });
-  if (!fromHistory && history.state?.practice) history.back();
+  if (!fromHistory) history.pushState({ view: "home" }, "", location.pathname);
+}
+
+function showCatalog({ fromHistory = false } = {}) {
+  pads.forEach((pad) => pad.destroy());
+  pads = [];
+  openCatalog(course, { fromHistory });
 }
 
 function buildPracticePage() {
@@ -200,23 +398,36 @@ function buildPracticePage() {
   pads = [];
   sessionCompleted = false;
 
-  elements.practiceKana.textContent = currentKana.character;
-  elements.practiceRomaji.textContent = currentKana.romaji;
-  const entry = getKanaProgress(currentKana.character);
-  elements.practiceCount.textContent = `練習 ${entry.count || 0} 次`;
+  const isWord = course === "words";
+  elements.practiceView.classList.toggle("practice-view--word", isWord);
+  elements.focusEyebrow.textContent = isWord ? "今天練這個單詞" : "今天練這個字";
+  elements.statusTitle.textContent = isWord ? "這個單詞目前：" : "這個字目前：";
+  elements.practiceKana.textContent = currentItem.character;
+  elements.practiceRomaji.textContent = currentItem.romaji;
+  elements.practiceMeaning.hidden = !isWord;
+  elements.practiceMeaning.textContent = currentItem.meaning || "";
+  const entry = getItemProgress(currentItem.character);
+  elements.practiceCount.textContent = `已寫 ${entry.written || 0} 次`;
+  elements.nextButton.firstChild.textContent = isWord ? "下一個單詞 " : "下一個字 ";
+  document.querySelector("#worksheet-title").textContent = isWord ? "描寫 2 次，再默寫 3 次" : "先描 3 次，再自己寫 5 次";
 
   if (practiceMode.type === "random") {
     elements.modeLabel.textContent = "隨機複習";
-    elements.positionLabel.textContent = "混合 46 音";
+    elements.positionLabel.textContent = `混合 ${getItems().length} 個${isWord ? "單詞" : "字"}`;
+  } else if (practiceMode.type === "word-group") {
+    const group = WORD_GROUPS.find((item) => item.id === practiceMode.groupId);
+    elements.modeLabel.textContent = `${group.label}單詞`;
+    elements.positionLabel.textContent = `${practiceMode.index + 1} / ${group.words.length}`;
   } else {
-    const row = KANA_ROWS.find((item) => item.id === practiceMode.rowId) || KANA_ROWS[0];
+    const row = getRows().find((item) => item.id === practiceMode.rowId) || getRows()[0];
     elements.modeLabel.textContent = `${row.label}練習`;
     elements.positionLabel.textContent = `${practiceMode.index + 1} / ${row.kana.length}`;
   }
 
   elements.practiceGrid.replaceChildren();
-  for (let index = 0; index < TOTAL_CELLS; index += 1) {
-    const cell = createPracticeCell(index, index < TRACE_CELLS);
+  elements.practiceGrid.classList.toggle("practice-grid--words", isWord);
+  for (let index = 0; index < getTotalCells(); index += 1) {
+    const cell = createPracticeCell(index, index < getTraceCells());
     elements.practiceGrid.append(cell.root);
     pads.push(cell.pad);
   }
@@ -236,10 +447,11 @@ function createPracticeCell(index, isTrace) {
 
   const square = document.createElement("div");
   square.className = "writing-square";
+  if (course === "words") square.classList.add("writing-square--word");
   if (isTrace) {
     const guide = document.createElement("span");
     guide.className = "trace-character";
-    guide.textContent = currentKana.character;
+    guide.textContent = currentItem.character;
     guide.setAttribute("aria-hidden", "true");
     square.append(guide);
   }
@@ -414,16 +626,18 @@ function makeDrawingPad(canvas, onChange) {
 
 function updateFilledCount() {
   const filled = pads.filter((pad) => pad.strokes.length > 0).length;
-  elements.filledCount.textContent = `${filled} / ${TOTAL_CELLS} 格`;
-  elements.completeButton.disabled = filled !== TOTAL_CELLS || sessionCompleted;
+  const total = getTotalCells();
+  elements.filledCount.textContent = `${filled} / ${total} 格`;
+  elements.completeButton.disabled = filled !== total || sessionCompleted;
 }
 
 function resetCompletionUI() {
-  elements.filledCount.textContent = `0 / ${TOTAL_CELLS} 格`;
+  const total = getTotalCells();
+  elements.filledCount.textContent = `0 / ${total} 格`;
   elements.completeButton.disabled = true;
   elements.completeButton.textContent = "完成練習";
   elements.completionPanel.classList.remove("completion-panel--done");
-  elements.completionTitle.textContent = "寫滿 8 格就完成這次練習";
+  elements.completionTitle.textContent = `寫滿 ${total} 格就完成這次練習`;
   elements.completionCopy.textContent = "每一格至少寫一筆，完成按鈕就會亮起。";
   elements.nextActions.hidden = true;
 }
@@ -444,37 +658,44 @@ function resetAllPads({ confirmFirst = false } = {}) {
 function completePractice() {
   if (sessionCompleted || pads.some((pad) => pad.strokes.length === 0)) return;
   sessionCompleted = true;
-  const entry = getKanaProgress(currentKana.character);
+  const entry = getItemProgress(currentItem.character);
   entry.count = (entry.count || 0) + 1;
+  entry.written = (entry.written || 0) + pads.length;
   entry.lastPracticed = new Date().toISOString();
+  const today = localDateKey();
+  progress.activity[today] = validCount(progress.activity[today]) + 1;
   saveProgress();
 
-  elements.practiceCount.textContent = `練習 ${entry.count} 次`;
+  elements.practiceCount.textContent = `已寫 ${entry.written} 次`;
   elements.completeButton.disabled = true;
   elements.completeButton.textContent = "已完成";
   elements.completionPanel.classList.add("completion-panel--done");
   elements.completionTitle.textContent = "完成一次練習！";
-  elements.completionCopy.textContent = "筆跡不會上傳或保存；你可以再寫一遍，或繼續下一個字。";
+  elements.completionCopy.textContent = `筆跡不會上傳或保存；你可以再寫一遍，或繼續下一個${course === "words" ? "單詞" : "字"}。`;
   elements.nextActions.hidden = false;
   showToast("已記錄這次練習");
   elements.nextActions.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-function goToNextKana() {
-  const previous = currentKana.character;
+function goToNextItem() {
+  const previous = currentItem.character;
   if (practiceMode.type === "random") {
-    currentKana = chooseRandomKana(previous);
+    currentItem = chooseRandomItem(previous);
+  } else if (practiceMode.type === "word-group") {
+    const group = WORD_GROUPS.find((item) => item.id === practiceMode.groupId);
+    practiceMode.index = (practiceMode.index + 1) % group.words.length;
+    currentItem = getItems().find((item) => item.character === group.words[practiceMode.index][0]);
   } else {
-    const row = KANA_ROWS.find((item) => item.id === practiceMode.rowId) || KANA_ROWS[0];
+    const row = getRows().find((item) => item.id === practiceMode.rowId) || getRows()[0];
     practiceMode.index = (practiceMode.index + 1) % row.kana.length;
-    currentKana = ALL_KANA.find((item) => item.character === row.kana[practiceMode.index][0]);
+    currentItem = getItems().find((item) => item.character === row.kana[practiceMode.index][0]);
   }
   buildPracticePage();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function setStatus(status) {
-  const entry = getKanaProgress(currentKana.character);
+  const entry = getItemProgress(currentItem.character);
   entry.status = status;
   saveProgress();
   updateStatusButtons();
@@ -482,7 +703,7 @@ function setStatus(status) {
 }
 
 function updateStatusButtons() {
-  const status = progress.kana[currentKana.character]?.status;
+  const status = progress[course][currentItem.character]?.status;
   elements.markReview.setAttribute("aria-pressed", String(status === "review"));
   elements.markMastered.setAttribute("aria-pressed", String(status === "mastered"));
 }
@@ -494,7 +715,7 @@ function speakCurrentKana() {
   }
 
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(currentKana.character);
+  const utterance = new SpeechSynthesisUtterance(currentItem.character);
   utterance.lang = "ja-JP";
   utterance.rate = 0.72;
   const japaneseVoice = window.speechSynthesis.getVoices().find((voice) => voice.lang.toLowerCase().startsWith("ja"));
@@ -519,7 +740,8 @@ function openHelp() {
 }
 
 elements.randomPractice.addEventListener("click", startRandomPractice);
-elements.backButton.addEventListener("click", () => showHome());
+elements.backButton.addEventListener("click", () => history.back());
+elements.catalogBack.addEventListener("click", () => history.back());
 elements.resetPageTop.addEventListener("click", () => resetAllPads({ confirmFirst: true }));
 elements.markReview.addEventListener("click", () => setStatus("review"));
 elements.markMastered.addEventListener("click", () => setStatus("mastered"));
@@ -529,12 +751,16 @@ elements.repeatButton.addEventListener("click", () => {
   resetAllPads();
   elements.practiceGrid.scrollIntoView({ behavior: "smooth", block: "start" });
 });
-elements.nextButton.addEventListener("click", goToNextKana);
+elements.nextButton.addEventListener("click", goToNextItem);
 elements.helpButton.addEventListener("click", openHelp);
 
 window.addEventListener("popstate", () => {
-  if (location.hash === "#practice") return;
-  showHome({ fromHistory: true });
+  if (["#hiragana", "#katakana", "#words"].includes(location.hash)) {
+    course = location.hash.slice(1);
+    showCatalog({ fromHistory: true });
+  } else {
+    showHome({ fromHistory: true });
+  }
 });
 
 window.addEventListener("beforeinstallprompt", (event) => {
@@ -563,9 +789,16 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
 }
 
 renderHome();
+if (["#hiragana", "#katakana", "#words"].includes(location.hash)) {
+  openCatalog(location.hash.slice(1), { fromHistory: true });
+} else if (location.hash.startsWith("#practice-")) {
+  history.replaceState({ view: "home" }, "", location.pathname);
+}
 
 window.__KANA_NOTEBOOK__ = Object.freeze({
   rows: KANA_ROWS,
   allKana: ALL_KANA,
+  katakana: ALL_KATAKANA,
+  words: ALL_WORDS,
   storageKey: STORAGE_KEY
 });
