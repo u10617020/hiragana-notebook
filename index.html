@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f8f1e7" />
+    <meta name="description" content="適合初學者的手機平假名手寫練習簿" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="假名手帖" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>假名手帖</title>
+  </head>
+  <body>
+    <main id="app" class="app-shell">
+      <section id="home-view" class="view" aria-labelledby="home-title">
+        <header class="hero">
+          <div class="hero__mark" aria-hidden="true">あ</div>
+          <div>
+            <p class="eyebrow">每天寫一點，就會記得久一點</p>
+            <h1 id="home-title">假名手帖</h1>
+          </div>
+          <button id="help-button" class="icon-button" type="button" aria-label="安裝與使用說明">?</button>
+        </header>
+
+        <section class="progress-card" aria-label="學習進度">
+          <div class="progress-card__copy">
+            <span class="progress-card__label">學習進度</span>
+            <strong><span id="mastered-count">0</span><small> / 46 個已會</small></strong>
+          </div>
+          <div class="progress-ring" id="progress-ring" aria-hidden="true">
+            <span id="progress-percent">0%</span>
+          </div>
+        </section>
+
+        <button id="random-practice" class="primary-action" type="button">
+          <span class="primary-action__icon" aria-hidden="true">↝</span>
+          <span><strong>隨機複習</strong><small>優先練習還不熟的字</small></span>
+          <span aria-hidden="true">›</span>
+        </button>
+
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">基本 46 音</p>
+            <h2>選一行開始練習</h2>
+          </div>
+          <div class="legend" aria-label="狀態說明">
+            <span><i class="dot dot--mastered"></i>會了</span>
+            <span><i class="dot dot--review"></i>再練</span>
+          </div>
+        </div>
+
+        <div id="row-list" class="row-list"></div>
+        <p class="privacy-note">你的進度只會保存在這台裝置上。</p>
+      </section>
+
+      <section id="practice-view" class="view" hidden aria-labelledby="practice-kana">
+        <header class="practice-nav">
+          <button id="back-button" class="icon-button" type="button" aria-label="返回選字">←</button>
+          <div>
+            <span id="mode-label" class="practice-nav__mode">あ行練習</span>
+            <span id="position-label" class="practice-nav__position">1 / 5</span>
+          </div>
+          <button id="reset-page-top" class="text-button" type="button">全部清除</button>
+        </header>
+
+        <section class="kana-focus">
+          <div>
+            <p class="eyebrow">今天練這個字</p>
+            <div class="kana-focus__title">
+              <h1 id="practice-kana">あ</h1>
+              <div>
+                <span id="practice-romaji" class="romaji">a</span>
+                <span id="practice-count" class="practice-count">練習 0 次</span>
+              </div>
+            </div>
+          </div>
+          <button id="speak-button" class="speak-button" type="button" aria-label="播放讀音">
+            <span aria-hidden="true">♪</span>
+            <small>聽讀音</small>
+          </button>
+        </section>
+
+        <section class="status-panel" aria-labelledby="status-title">
+          <span id="status-title">這個字目前：</span>
+          <div class="segmented-control">
+            <button id="mark-review" type="button" data-status="review">再練一下</button>
+            <button id="mark-mastered" type="button" data-status="mastered">我會了</button>
+          </div>
+        </section>
+
+        <section class="worksheet" aria-labelledby="worksheet-title">
+          <div class="worksheet__heading">
+            <div>
+              <p class="eyebrow">手寫練習簿</p>
+              <h2 id="worksheet-title">先描 3 次，再自己寫 5 次</h2>
+            </div>
+            <span id="filled-count" class="filled-count">0 / 8 格</span>
+          </div>
+          <div id="practice-grid" class="practice-grid"></div>
+        </section>
+
+        <section id="completion-panel" class="completion-panel" aria-live="polite">
+          <div>
+            <strong id="completion-title">寫滿 8 格就完成這次練習</strong>
+            <p id="completion-copy">每一格至少寫一筆，完成按鈕就會亮起。</p>
+          </div>
+          <button id="complete-button" class="complete-button" type="button" disabled>完成練習</button>
+        </section>
+
+        <section id="next-actions" class="next-actions" hidden>
+          <button id="repeat-button" class="secondary-action" type="button">再寫一遍</button>
+          <button id="next-button" class="primary-action primary-action--compact" type="button">下一個字 <span aria-hidden="true">›</span></button>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="help-dialog" class="help-dialog">
+      <form method="dialog">
+        <button class="dialog-close" value="close" aria-label="關閉說明">×</button>
+        <p class="eyebrow">放進手機主畫面</p>
+        <h2>像 App 一樣使用</h2>
+        <div class="help-step">
+          <span>iPhone</span>
+          <p>在 Safari 點「分享」，再選「加入主畫面」。</p>
+        </div>
+        <div class="help-step">
+          <span>Android</span>
+          <p>在 Chrome 選單點「安裝應用程式」或「加到主畫面」。</p>
+        </div>
+        <p class="dialog-note">安裝後，沒有網路也能繼續練習。</p>
+        <button id="install-button" class="primary-action primary-action--dialog" type="button" hidden>安裝到這台裝置</button>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <noscript>這個工具需要啟用 JavaScript 才能使用。</noscript>
+    <script src="app.js" defer></script>
+  </body>
+</html>
