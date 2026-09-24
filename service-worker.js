@@ -1,15 +1,20 @@
-const CACHE_NAME = "kana-note-v3";
+const CACHE_NAME = "kana-note-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=2",
-  "./app.js?v=2",
+  "./styles.css?v=3",
+  "./app.js?v=3",
   "./manifest.webmanifest",
-  "./icons/icon.svg"
+  "./icons/icon.svg",
+  "./audio/manifest.json"
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  event.waitUntil(caches.open(CACHE_NAME).then(async (cache) => {
+    await cache.addAll(APP_SHELL);
+    const manifest = await (await cache.match("./audio/manifest.json")).json();
+    await cache.addAll(manifest);
+  }));
   self.skipWaiting();
 });
 

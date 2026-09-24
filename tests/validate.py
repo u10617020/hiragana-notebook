@@ -56,17 +56,25 @@ def main() -> None:
     require('const TRACE_CELLS = 3' in app, "描字格數不是 3")
     require('const TOTAL_CELLS = 8' in app, "總格數不是 8")
     require('const WORD_TRACE_CELLS = 2' in app and 'const WORD_TOTAL_CELLS = 5' in app, "單詞練習格數不正確")
+    require('function showActiveCell()' in app and 'cell.hidden = index !== activeCellIndex' in app, "練習畫面沒有單格切換")
+    require('size * (course === "words" ? 0.01 : 0.017)' in app, "書寫筆畫未調細")
     require('touch-action: none' in (ROOT / "styles.css").read_text(encoding="utf-8"), "畫布未停用觸控捲動")
     require('localStorage.setItem' in app and 'lastPracticed' in app, "本機進度儲存不完整")
     require('hiragana-copybook:v1' in app and 'kana-notebook:v2' in app, "缺少舊進度遷移")
     require('entry.written = (entry.written || 0) + pads.length' in app, "書寫次數沒有逐格累計")
     require('speechSynthesis' in app and 'ja-JP' in app, "日文朗讀功能不完整")
+    audio_paths = json.loads((ROOT / "audio" / "manifest.json").read_text(encoding="utf-8"))
+    require(len(audio_paths) == 76 and len(set(audio_paths)) == 76, "應有 76 個獨立讀音檔")
+    for path in audio_paths:
+        audio_file = ROOT / path.removeprefix("./")
+        require(audio_file.is_file() and audio_file.stat().st_size > 1000, f"讀音檔缺失或太小：{path}")
 
     require(manifest.get("display") == "standalone", "PWA display 必須是 standalone")
     require(manifest.get("start_url") == "./", "PWA start_url 不正確")
     cached_paths = set(re.findall(r'"(\./[^"\n]+)"', worker))
-    for path in ["./index.html", "./styles.css?v=2", "./app.js?v=2", "./manifest.webmanifest", "./icons/icon.svg"]:
+    for path in ["./index.html", "./styles.css?v=3", "./app.js?v=3", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
         require(path in cached_paths, f"離線快取缺少：{path}")
+    require('cache.addAll(manifest)' in worker, "讀音檔沒有加入離線快取")
 
     html_ids = set(re.findall(r'id="([^"]+)"', html))
     queried_ids = set(re.findall(r'querySelector\("#([^"\)]+)"\)', app))

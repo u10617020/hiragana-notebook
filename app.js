@@ -54,8 +54,9 @@ const WORD_GROUPS = [
   ] }
 ];
 
-const ALL_WORDS = WORD_GROUPS.flatMap((group) => group.words.map(([character, romaji, meaning]) => ({
-  character, romaji, meaning, groupId: group.id, groupLabel: group.label
+const ALL_WORDS = WORD_GROUPS.flatMap((group) => group.words.map(([character, romaji, meaning], index) => ({
+  character, romaji, meaning, groupId: group.id, groupLabel: group.label,
+  audioPath: `audio/words/${group.id}-${String(index + 1).padStart(2, "0")}.mp3`
 })));
 const ALL_KATAKANA = KATAKANA_ROWS.flatMap((row) => row.kana.map(([character, romaji]) => ({
   character, romaji, rowId: row.id, rowLabel: row.label
@@ -106,6 +107,7 @@ const elements = {
   completionPanel: document.querySelector("#completion-panel"),
   completionTitle: document.querySelector("#completion-title"),
   completionCopy: document.querySelector("#completion-copy"),
+  previousCell: document.querySelector("#previous-cell"),
   completeButton: document.querySelector("#complete-button"),
   nextActions: document.querySelector("#next-actions"),
   repeatButton: document.querySelector("#repeat-button"),
@@ -121,9 +123,11 @@ let course = "hiragana";
 let currentItem = ALL_KANA[0];
 let practiceMode = { type: "row", rowId: "a", index: 0 };
 let pads = [];
+let activeCellIndex = 0;
 let sessionCompleted = false;
 let deferredInstallPrompt = null;
 let toastTimer = 0;
+let activeAudio = null;
 
 function defaultProgress() {
   return { version: STORAGE_VERSION, hiragana: {}, katakana: {}, words: {}, activity: {} };
@@ -377,6 +381,7 @@ function showPractice() {
 }
 
 function showHome({ fromHistory = false } = {}) {
+  stopPronunciation();
   pads.forEach((pad) => pad.destroy());
   pads = [];
   renderHome();
@@ -388,14 +393,17 @@ function showHome({ fromHistory = false } = {}) {
 }
 
 function showCatalog({ fromHistory = false } = {}) {
+  stopPronunciation();
   pads.forEach((pad) => pad.destroy());
   pads = [];
   openCatalog(course, { fromHistory });
 }
 
 function buildPracticePage() {
+  stopPronunciation();
   pads.forEach((pad) => pad.destroy());
   pads = [];
+  activeCellIndex = 0;
   sessionCompleted = false;
 
   const isWord = course === "words";
@@ -518,7 +526,7 @@ function makeDrawingPad(canvas, onChange) {
     context.lineCap = "round";
     context.lineJoin = "round";
     context.strokeStyle = "#263a36";
-    context.lineWidth = Math.max(5, size * 0.045) * (canvas.width / size);
+    context.lineWidth = Math.max(2.5, size * (course === "words" ? 0.01 : 0.017)) * (canvas.width / size);
   }
 
   function drawStroke(stroke) {
@@ -627,19 +635,47 @@ function makeDrawingPad(canvas, onChange) {
 function updateFilledCount() {
   const filled = pads.filter((pad) => pad.strokes.length > 0).length;
   const total = getTotalCells();
-  elements.filledCount.textContent = `${filled} / ${total} 格`;
-  elements.completeButton.disabled = filled !== total || sessionCompleted;
+  elements.filledCount.textContent = `第 ${activeCellIndex + 1} / ${total} 格`;
+  if (sessionCompleted) return;
+  const isLast = activeCellIndex === total - 1;
+  elements.completeButton.textContent = isLast ? "完成練習" : "下一格";
+  elements.completeButton.disabled = isLast ? filled !== total : pads[activeCellIndex].strokes.length === 0;
+  elements.previousCell.disabled = activeCellIndex === 0;
+  elements.completionTitle.textContent = isLast ? "最後一格，寫完就完成" : "寫完這一格，再換下一格";
+  elements.completionCopy.textContent = isLast
+    ? `已寫 ${filled} / ${total} 格。若有空格，請返回補寫。`
+    : "寫好後可以先復原或清除，再按下一格。";
+}
+
+function showActiveCell() {
+  [...elements.practiceGrid.children].forEach((cell, index) => { cell.hidden = index !== activeCellIndex; });
+  pads[activeCellIndex].resize();
+  updateFilledCount();
+}
+
+function advanceCell() {
+  if (sessionCompleted || elements.completeButton.disabled) return;
+  if (activeCellIndex === pads.length - 1) {
+    completePractice();
+  } else {
+    activeCellIndex += 1;
+    showActiveCell();
+    elements.practiceGrid.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+function previousCell() {
+  if (activeCellIndex === 0 || sessionCompleted) return;
+  activeCellIndex -= 1;
+  showActiveCell();
 }
 
 function resetCompletionUI() {
   const total = getTotalCells();
-  elements.filledCount.textContent = `0 / ${total} 格`;
-  elements.completeButton.disabled = true;
-  elements.completeButton.textContent = "完成練習";
   elements.completionPanel.classList.remove("completion-panel--done");
-  elements.completionTitle.textContent = `寫滿 ${total} 格就完成這次練習`;
-  elements.completionCopy.textContent = "每一格至少寫一筆，完成按鈕就會亮起。";
   elements.nextActions.hidden = true;
+  activeCellIndex = 0;
+  showActiveCell();
 }
 
 function resetAllPads({ confirmFirst = false } = {}) {
@@ -651,7 +687,6 @@ function resetAllPads({ confirmFirst = false } = {}) {
   });
   sessionCompleted = false;
   resetCompletionUI();
-  updateFilledCount();
   elements.practiceGrid.querySelectorAll(".cell-tools button").forEach((button) => { button.disabled = true; });
 }
 
@@ -669,6 +704,7 @@ function completePractice() {
   elements.practiceCount.textContent = `已寫 ${entry.written} 次`;
   elements.completeButton.disabled = true;
   elements.completeButton.textContent = "已完成";
+  elements.previousCell.disabled = true;
   elements.completionPanel.classList.add("completion-panel--done");
   elements.completionTitle.textContent = "完成一次練習！";
   elements.completionCopy.textContent = `筆跡不會上傳或保存；你可以再寫一遍，或繼續下一個${course === "words" ? "單詞" : "字"}。`;
@@ -708,9 +744,17 @@ function updateStatusButtons() {
   elements.markMastered.setAttribute("aria-pressed", String(status === "mastered"));
 }
 
-function speakCurrentKana() {
+function stopPronunciation() {
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio = null;
+  }
+  elements.speakButton.querySelector("small").textContent = "聽讀音";
+}
+
+function speakWithDeviceVoice() {
   if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
-    showToast("這個瀏覽器沒有提供語音朗讀功能。");
+    showToast("讀音無法播放，請重新整理後再試。");
     return;
   }
 
@@ -722,6 +766,30 @@ function speakCurrentKana() {
   if (japaneseVoice) utterance.voice = japaneseVoice;
   utterance.onerror = () => showToast("目前無法播放日文讀音，請檢查手機的語音設定。");
   window.speechSynthesis.speak(utterance);
+}
+
+function speakCurrentItem() {
+  stopPronunciation();
+  const path = course === "words" ? currentItem.audioPath : `audio/kana/${currentItem.romaji}.mp3`;
+  const audio = new Audio(path);
+  activeAudio = audio;
+  audio.preload = "auto";
+  let fellBack = false;
+  const fallback = () => {
+    if (fellBack || activeAudio !== audio) return;
+    fellBack = true;
+    stopPronunciation();
+    showToast("讀音檔暫時無法播放，改用裝置語音。");
+    speakWithDeviceVoice();
+  };
+  audio.addEventListener("playing", () => {
+    if (activeAudio === audio) elements.speakButton.querySelector("small").textContent = "播放中";
+  });
+  audio.addEventListener("ended", () => {
+    if (activeAudio === audio) stopPronunciation();
+  });
+  audio.addEventListener("error", fallback);
+  audio.play().catch(fallback);
 }
 
 function showToast(message) {
@@ -745,8 +813,9 @@ elements.catalogBack.addEventListener("click", () => history.back());
 elements.resetPageTop.addEventListener("click", () => resetAllPads({ confirmFirst: true }));
 elements.markReview.addEventListener("click", () => setStatus("review"));
 elements.markMastered.addEventListener("click", () => setStatus("mastered"));
-elements.speakButton.addEventListener("click", speakCurrentKana);
-elements.completeButton.addEventListener("click", completePractice);
+elements.speakButton.addEventListener("click", speakCurrentItem);
+elements.completeButton.addEventListener("click", advanceCell);
+elements.previousCell.addEventListener("click", previousCell);
 elements.repeatButton.addEventListener("click", () => {
   resetAllPads();
   elements.practiceGrid.scrollIntoView({ behavior: "smooth", block: "start" });

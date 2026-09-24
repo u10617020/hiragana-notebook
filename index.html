@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/icon.svg" />
-    <link rel="stylesheet" href="styles.css?v=2" />
+    <link rel="stylesheet" href="styles.css?v=3" />
     <title>假名手帖</title>
   </head>
   <body>
@@ -114,10 +114,13 @@
 
         <section id="completion-panel" class="completion-panel" aria-live="polite">
           <div>
-            <strong id="completion-title">寫滿 8 格就完成這次練習</strong>
-            <p id="completion-copy">每一格至少寫一筆，完成按鈕就會亮起。</p>
+            <strong id="completion-title">寫完這一格，再換下一格</strong>
+            <p id="completion-copy">寫好後可以先復原或清除，再按下一格。</p>
           </div>
-          <button id="complete-button" class="complete-button" type="button" disabled>完成練習</button>
+          <div class="cell-navigation">
+            <button id="previous-cell" class="secondary-action" type="button" disabled>上一格</button>
+            <button id="complete-button" class="complete-button" type="button" disabled>下一格</button>
+          </div>
         </section>
 
         <section id="next-actions" class="next-actions" hidden>
@@ -147,6 +150,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <noscript>這個工具需要啟用 JavaScript 才能使用。</noscript>
-    <script src="app.js?v=2" defer></script>
+    <script src="app.js?v=3" defer></script>
   </body>
 </html>
