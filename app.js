@@ -99,7 +99,7 @@ const elements = {
   focusEyebrow: document.querySelector("#focus-eyebrow"),
   practiceCount: document.querySelector("#practice-count"),
   speakButton: document.querySelector("#speak-button"),
-  statusTitle: document.querySelector("#status-title"),
+  reviewActions: document.querySelector("#review-actions"),
   markReview: document.querySelector("#mark-review"),
   markMastered: document.querySelector("#mark-mastered"),
   practiceGrid: document.querySelector("#practice-grid"),
@@ -409,7 +409,6 @@ function buildPracticePage() {
   const isWord = course === "words";
   elements.practiceView.classList.toggle("practice-view--word", isWord);
   elements.focusEyebrow.textContent = isWord ? "今天練這個單詞" : "今天練這個字";
-  elements.statusTitle.textContent = isWord ? "這個單詞目前：" : "這個字目前：";
   elements.practiceKana.textContent = currentItem.character;
   elements.practiceRomaji.textContent = currentItem.romaji;
   elements.practiceMeaning.hidden = !isWord;
@@ -673,6 +672,7 @@ function previousCell() {
 function resetCompletionUI() {
   const total = getTotalCells();
   elements.completionPanel.classList.remove("completion-panel--done");
+  elements.reviewActions.hidden = true;
   elements.nextActions.hidden = true;
   activeCellIndex = 0;
   showActiveCell();
@@ -708,9 +708,10 @@ function completePractice() {
   elements.completionPanel.classList.add("completion-panel--done");
   elements.completionTitle.textContent = "完成一次練習！";
   elements.completionCopy.textContent = `筆跡不會上傳或保存；你可以再寫一遍，或繼續下一個${course === "words" ? "單詞" : "字"}。`;
+  elements.reviewActions.hidden = false;
   elements.nextActions.hidden = false;
   showToast("已記錄這次練習");
-  elements.nextActions.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  elements.reviewActions.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function goToNextItem() {

@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/icon.svg" />
-    <link rel="stylesheet" href="styles.css?v=3" />
+    <link rel="stylesheet" href="styles.css?v=4" />
     <title>假名手帖</title>
   </head>
   <body>
@@ -93,14 +93,6 @@
           </button>
         </section>
 
-        <section class="status-panel" aria-labelledby="status-title">
-          <span id="status-title">這個字目前：</span>
-          <div class="segmented-control">
-            <button id="mark-review" type="button" data-status="review">再練一下</button>
-            <button id="mark-mastered" type="button" data-status="mastered">我會了</button>
-          </div>
-        </section>
-
         <section class="worksheet" aria-labelledby="worksheet-title">
           <div class="worksheet__heading">
             <div>
@@ -121,6 +113,11 @@
             <button id="previous-cell" class="secondary-action" type="button" disabled>上一格</button>
             <button id="complete-button" class="complete-button" type="button" disabled>下一格</button>
           </div>
+        </section>
+
+        <section id="review-actions" class="review-actions" aria-label="練習狀態" hidden>
+          <button id="mark-review" type="button" data-status="review">再練一下</button>
+          <button id="mark-mastered" type="button" data-status="mastered">我會了</button>
         </section>
 
         <section id="next-actions" class="next-actions" hidden>
@@ -150,6 +147,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <noscript>這個工具需要啟用 JavaScript 才能使用。</noscript>
-    <script src="app.js?v=3" defer></script>
+    <script src="app.js?v=4" defer></script>
   </body>
 </html>

@@ -72,7 +72,7 @@ def main() -> None:
     require(manifest.get("display") == "standalone", "PWA display 必須是 standalone")
     require(manifest.get("start_url") == "./", "PWA start_url 不正確")
     cached_paths = set(re.findall(r'"(\./[^"\n]+)"', worker))
-    for path in ["./index.html", "./styles.css?v=3", "./app.js?v=3", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
+    for path in ["./index.html", "./styles.css?v=4", "./app.js?v=4", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
         require(path in cached_paths, f"離線快取缺少：{path}")
     require('cache.addAll(manifest)' in worker, "讀音檔沒有加入離線快取")
 
