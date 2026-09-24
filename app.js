@@ -250,7 +250,7 @@ function renderCatalog() {
   elements.catalogTitle.textContent = title;
   elements.catalogNavTitle.textContent = title;
   elements.catalogEyebrow.textContent = isWords ? "3 個生活主題" : "基本 46 音";
-  elements.catalogDescription.textContent = isWords ? "先看意思與讀音，再動手寫完整單詞。" : "選一個字開始描寫與默寫。";
+  elements.catalogDescription.textContent = isWords ? "先看意思與讀音，再動手寫完整單詞。" : "上面看假名、下面看羅馬拼音，選一個字開始練習。";
   elements.catalogSectionTitle.textContent = isWords ? "選一個主題與單詞" : "選一行開始練習";
   const items = getItems();
   const mastered = items.filter(({ character }) => progress[course][character]?.status === "mastered").length;
@@ -300,12 +300,18 @@ function renderCatalog() {
     characters.className = "kana-row__characters";
     characters.setAttribute("aria-label", row.label);
 
-    row.kana.forEach(([character], index) => {
+    row.kana.forEach(([character, romaji], index) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "kana-button";
-      button.textContent = character;
-      button.setAttribute("aria-label", `練習 ${character}`);
+      const kanaLabel = document.createElement("span");
+      kanaLabel.className = "kana-button__character";
+      kanaLabel.textContent = character;
+      const romajiLabel = document.createElement("span");
+      romajiLabel.className = "kana-button__romaji";
+      romajiLabel.textContent = romaji;
+      button.append(kanaLabel, romajiLabel);
+      button.setAttribute("aria-label", `練習 ${character}，讀作 ${romaji}`);
       const status = progress[course][character]?.status;
       if (status) button.dataset.status = status;
       button.title = `已寫 ${validCount(progress[course][character]?.written)} 次`;

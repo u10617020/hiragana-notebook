@@ -57,6 +57,7 @@ def main() -> None:
     require('const TOTAL_CELLS = 8' in app, "總格數不是 8")
     require('const WORD_TRACE_CELLS = 2' in app and 'const WORD_TOTAL_CELLS = 5' in app, "單詞練習格數不正確")
     require('function showActiveCell()' in app and 'cell.hidden = index !== activeCellIndex' in app, "練習畫面沒有單格切換")
+    require('kanaLabel.textContent = character' in app and 'romajiLabel.textContent = romaji' in app, "選字頁未顯示假名與羅馬拼音")
     require('size * (course === "words" ? 0.01 : 0.017)' in app, "書寫筆畫未調細")
     require('touch-action: none' in (ROOT / "styles.css").read_text(encoding="utf-8"), "畫布未停用觸控捲動")
     require('localStorage.setItem' in app and 'lastPracticed' in app, "本機進度儲存不完整")
@@ -72,7 +73,7 @@ def main() -> None:
     require(manifest.get("display") == "standalone", "PWA display 必須是 standalone")
     require(manifest.get("start_url") == "./", "PWA start_url 不正確")
     cached_paths = set(re.findall(r'"(\./[^"\n]+)"', worker))
-    for path in ["./index.html", "./styles.css?v=4", "./app.js?v=4", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
+    for path in ["./index.html", "./styles.css?v=5", "./app.js?v=5", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
         require(path in cached_paths, f"離線快取缺少：{path}")
     require('cache.addAll(manifest)' in worker, "讀音檔沒有加入離線快取")
 
