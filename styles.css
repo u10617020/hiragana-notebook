@@ -15,6 +15,7 @@
   --shadow: 0 14px 34px rgba(65, 45, 30, 0.09);
   --radius-lg: 26px;
   --radius-md: 18px;
+  --kana-font: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
   font-family: Inter, ui-rounded, "SF Pro Rounded", "Noto Sans TC", "PingFang TC", system-ui, sans-serif;
 }
 
@@ -106,9 +107,9 @@ h2 {
   color: var(--card);
   background: var(--accent);
   box-shadow: 0 8px 20px rgba(169, 65, 53, 0.2);
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-family: var(--kana-font);
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 400;
   transform: rotate(-2deg);
 }
 
@@ -218,9 +219,9 @@ h2 {
   border-radius: 18px;
   color: var(--accent-dark);
   background: var(--accent-soft);
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-family: var(--kana-font);
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .course-card:nth-child(2) .course-card__icon {
@@ -501,8 +502,9 @@ h2 {
   display: block;
   margin-bottom: 3px;
   color: var(--ink);
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-family: var(--kana-font);
   font-size: 1.25rem;
+  font-weight: 400;
 }
 
 .kana-row__characters {
@@ -524,16 +526,16 @@ h2 {
   color: var(--ink);
   background: var(--paper);
   cursor: pointer;
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
-  font-size: 1.35rem;
-  font-weight: 650;
+  font-family: var(--kana-font);
+  font-size: 1.45rem;
+  font-weight: 400;
 }
 
 .kana-button__romaji {
   color: var(--muted);
   font-family: system-ui, sans-serif;
-  font-size: 0.67rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 400;
   line-height: 1;
 }
 
@@ -617,9 +619,9 @@ h2 {
 }
 
 .kana-focus h1 {
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-family: var(--kana-font);
   font-size: clamp(5rem, 25vw, 8rem);
-  font-weight: 600;
+  font-weight: 400;
   line-height: 0.95;
 }
 
@@ -819,9 +821,9 @@ h2 {
   place-items: center;
   color: rgba(38, 58, 54, 0.16);
   pointer-events: none;
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-family: var(--kana-font);
   font-size: clamp(9rem, 58vw, 15rem);
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1;
   transform: translateY(-2%);
 }
