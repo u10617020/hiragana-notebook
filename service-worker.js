@@ -1,9 +1,11 @@
-const CACHE_NAME = "kana-note-v7";
+const CACHE_NAME = "kana-note-v8";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=6",
-  "./app.js?v=5",
+  "./offline.html",
+  "./styles.css?v=7",
+  "./app.js?v=6",
+  "./quick.js?v=1",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./audio/manifest.json"

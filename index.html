@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/icon.svg" />
-    <link rel="stylesheet" href="styles.css?v=6" />
+    <link rel="stylesheet" href="styles.css?v=7" />
     <title>假名手帖</title>
   </head>
   <body>
@@ -42,7 +42,57 @@
           </div>
         </div>
         <div id="course-list" class="course-list"></div>
+        <button id="quick-open" class="quick-entry" type="button">
+          <span aria-hidden="true">⚡</span>
+          <span><strong>情境快速學習</strong><small>看日文、打羅馬拼音、動手寫</small></span>
+          <span aria-hidden="true">›</span>
+        </button>
+        <a class="offline-download" href="offline.html" download="假名手帖-離線版.html">↓ 下載單檔離線版</a>
         <p class="privacy-note">你的進度只會保存在這台裝置上。</p>
+      </section>
+
+      <section id="quick-view" class="view" hidden aria-labelledby="quick-title">
+        <header class="practice-nav">
+          <button id="quick-back" class="icon-button" type="button" aria-label="返回首頁">←</button>
+          <div><span class="practice-nav__mode">情境快速學習</span></div>
+          <span aria-hidden="true"></span>
+        </header>
+        <p class="eyebrow">選一個地方，馬上開始</p>
+        <h1 id="quick-title" class="catalog-title">今天要去哪裡？</h1>
+        <p class="catalog-description">每個情境 5 題：先輸入羅馬拼音，再親手寫一次。</p>
+        <div id="scene-list" class="scene-list"></div>
+      </section>
+
+      <section id="quick-play-view" class="view quick-play" hidden aria-labelledby="quick-word">
+        <header class="practice-nav">
+          <button id="quick-play-back" class="icon-button" type="button" aria-label="返回情境選擇">←</button>
+          <div><span id="quick-scene-name" class="practice-nav__mode">教室</span><span id="quick-position" class="practice-nav__position">1 / 5</span></div>
+          <span aria-hidden="true"></span>
+        </header>
+        <div id="quick-stage" class="quick-stage">
+          <p id="quick-scene-label" class="eyebrow">教室常用語</p>
+          <p id="quick-meaning" class="quick-meaning">老師</p>
+          <h1 id="quick-word" class="quick-word">せんせい</h1>
+          <form id="quick-type-form" class="quick-type-form">
+            <label for="quick-answer">輸入羅馬拼音</label>
+            <div class="quick-type-row"><input id="quick-answer" type="text" inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="例如 sensei" required /><button type="submit">確認</button></div>
+            <p id="quick-feedback" class="quick-feedback" role="status" aria-live="polite">看著日文，試著打出讀音。</p>
+            <button id="quick-reveal" class="quick-link" type="button">看答案並練習手寫</button>
+          </form>
+          <div id="quick-write-stage" class="quick-write-stage" hidden>
+            <p id="quick-reading" class="quick-reading">sensei</p>
+            <p>照著上方日文寫一次；字形由你自己確認。</p>
+            <div class="quick-writing-square"><canvas id="quick-canvas" aria-label="手寫練習區"></canvas></div>
+            <div class="quick-write-actions"><button id="quick-clear" class="secondary-action" type="button">清除重寫</button><button id="quick-next" class="primary-action" type="button" disabled>寫好了，下一題</button></div>
+          </div>
+        </div>
+        <div id="quick-finish" class="quick-finish" hidden>
+          <span aria-hidden="true">✨</span>
+          <h2>這個情境完成了！</h2>
+          <p id="quick-result">完成 5 題</p>
+          <button id="quick-restart" class="primary-action" type="button">再玩一次</button>
+          <button id="quick-scenes" class="secondary-action" type="button">換個情境</button>
+        </div>
       </section>
 
       <section id="catalog-view" class="view" hidden aria-labelledby="catalog-title">
@@ -147,6 +197,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <noscript>這個工具需要啟用 JavaScript 才能使用。</noscript>
-    <script src="app.js?v=5" defer></script>
+    <script src="app.js?v=6" defer></script>
+    <script src="quick.js?v=1" defer></script>
   </body>
 </html>

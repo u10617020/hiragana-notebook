@@ -330,6 +330,8 @@ function openCatalog(kind, { fromHistory = false } = {}) {
   renderCatalog();
   elements.homeView.hidden = true;
   elements.practiceView.hidden = true;
+  document.querySelector("#quick-view").hidden = true;
+  document.querySelector("#quick-play-view").hidden = true;
   elements.catalogView.hidden = false;
   window.scrollTo({ top: 0, behavior: "auto" });
   if (!fromHistory) history.pushState({ view: "catalog", course }, "", `#${course}`);
@@ -381,6 +383,8 @@ function setCurrentItem(character) {
 function showPractice() {
   elements.homeView.hidden = true;
   elements.catalogView.hidden = true;
+  document.querySelector("#quick-view").hidden = true;
+  document.querySelector("#quick-play-view").hidden = true;
   elements.practiceView.hidden = false;
   window.scrollTo({ top: 0, behavior: "auto" });
   history.pushState({ view: "practice", course }, "", `#practice-${course}`);
@@ -393,6 +397,8 @@ function showHome({ fromHistory = false } = {}) {
   renderHome();
   elements.practiceView.hidden = true;
   elements.catalogView.hidden = true;
+  document.querySelector("#quick-view").hidden = true;
+  document.querySelector("#quick-play-view").hidden = true;
   elements.homeView.hidden = false;
   window.scrollTo({ top: 0, behavior: "auto" });
   if (!fromHistory) history.pushState({ view: "home" }, "", location.pathname);
@@ -778,7 +784,7 @@ function speakWithDeviceVoice() {
 function speakCurrentItem() {
   stopPronunciation();
   const path = course === "words" ? currentItem.audioPath : `audio/kana/${currentItem.romaji}.mp3`;
-  const audio = new Audio(path);
+  const audio = new Audio(window.__OFFLINE_AUDIO__?.[path] || path);
   activeAudio = audio;
   audio.preload = "auto";
   let fellBack = false;
@@ -831,7 +837,9 @@ elements.nextButton.addEventListener("click", goToNextItem);
 elements.helpButton.addEventListener("click", openHelp);
 
 window.addEventListener("popstate", () => {
-  if (["#hiragana", "#katakana", "#words"].includes(location.hash)) {
+  if (location.hash === "#quick" || location.hash.startsWith("#quick-")) {
+    window.__QUICK_ROUTE__?.();
+  } else if (["#hiragana", "#katakana", "#words"].includes(location.hash)) {
     course = location.hash.slice(1);
     showCatalog({ fromHistory: true });
   } else {

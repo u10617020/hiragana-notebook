@@ -28,6 +28,7 @@ def main() -> None:
     html = (ROOT / "index.html").read_text(encoding="utf-8")
     app = (ROOT / "app.js").read_text(encoding="utf-8")
     worker = (ROOT / "service-worker.js").read_text(encoding="utf-8")
+    quick = (ROOT / "quick.js").read_text(encoding="utf-8")
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text(encoding="utf-8"))
 
     kana_pairs = re.findall(r'\["([ぁ-ん])",\s*"([a-z]+)"\]', app)
@@ -63,25 +64,32 @@ def main() -> None:
     require('localStorage.setItem' in app and 'lastPracticed' in app, "本機進度儲存不完整")
     require('hiragana-copybook:v1' in app and 'kana-notebook:v2' in app, "缺少舊進度遷移")
     require('entry.written = (entry.written || 0) + pads.length' in app, "書寫次數沒有逐格累計")
+    for scene in ["classroom", "hospital", "station", "store"]:
+        require(f'id: "{scene}"' in quick, f"缺少快速學習情境：{scene}")
+    require('normalizeRomaji(quick.answer.value)' in quick and 'pointerdown' in quick, "快速學習未包含拼音與手寫")
     require('speechSynthesis' in app and 'ja-JP' in app, "日文朗讀功能不完整")
     audio_paths = json.loads((ROOT / "audio" / "manifest.json").read_text(encoding="utf-8"))
     require(len(audio_paths) == 76 and len(set(audio_paths)) == 76, "應有 76 個獨立讀音檔")
     for path in audio_paths:
         audio_file = ROOT / path.removeprefix("./")
         require(audio_file.is_file() and audio_file.stat().st_size > 1000, f"讀音檔缺失或太小：{path}")
+    offline = (ROOT / "offline.html").read_text(encoding="utf-8")
+    require(offline.count("data:audio/mpeg;base64,") == 76, "單檔離線版沒有內含全部讀音")
+    require("<script src=" not in offline and "<link rel=\"stylesheet\"" not in offline, "單檔離線版仍依賴外部程式")
 
     require(manifest.get("display") == "standalone", "PWA display 必須是 standalone")
     require(manifest.get("start_url") == "./", "PWA start_url 不正確")
     cached_paths = set(re.findall(r'"(\./[^"\n]+)"', worker))
-    for path in ["./index.html", "./styles.css?v=6", "./app.js?v=5", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
+    for path in ["./index.html", "./offline.html", "./styles.css?v=7", "./app.js?v=6", "./quick.js?v=1", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
         require(path in cached_paths, f"離線快取缺少：{path}")
     require('cache.addAll(manifest)' in worker, "讀音檔沒有加入離線快取")
 
     html_ids = set(re.findall(r'id="([^"]+)"', html))
     queried_ids = set(re.findall(r'querySelector\("#([^"\)]+)"\)', app))
+    queried_ids |= set(re.findall(r'querySelector\("#([^"\)]+)"\)', quick))
     require(queried_ids <= html_ids, f"JavaScript 查詢了不存在的元素：{sorted(queried_ids - html_ids)}")
 
-    print("PASS: 平片假名、30 個單詞、書寫紀錄、朗讀與 PWA 檔案檢查通過")
+    print("PASS: 假名、單詞、四個情境、書寫、讀音與離線快取檢查通過")
 
 
 if __name__ == "__main__":
