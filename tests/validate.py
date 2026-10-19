@@ -67,6 +67,7 @@ def main() -> None:
     for scene in ["classroom", "hospital", "station", "store"]:
         require(f'id: "{scene}"' in quick, f"缺少快速學習情境：{scene}")
     require('normalizeRomaji(quick.answer.value)' in quick and 'pointerdown' in quick, "快速學習未包含拼音與手寫")
+    require('playCorrectSound();' in quick and 'createOscillator()' in quick, "拼音答對時沒有離線可用的提示音")
     require('speechSynthesis' in app and 'ja-JP' in app, "日文朗讀功能不完整")
     audio_paths = json.loads((ROOT / "audio" / "manifest.json").read_text(encoding="utf-8"))
     require(len(audio_paths) == 76 and len(set(audio_paths)) == 76, "應有 76 個獨立讀音檔")
@@ -80,7 +81,7 @@ def main() -> None:
     require(manifest.get("display") == "standalone", "PWA display 必須是 standalone")
     require(manifest.get("start_url") == "./", "PWA start_url 不正確")
     cached_paths = set(re.findall(r'"(\./[^"\n]+)"', worker))
-    for path in ["./index.html", "./offline.html", "./styles.css?v=7", "./app.js?v=6", "./quick.js?v=1", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
+    for path in ["./index.html", "./offline.html", "./styles.css?v=7", "./app.js?v=6", "./quick.js?v=2", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
         require(path in cached_paths, f"離線快取缺少：{path}")
     require('cache.addAll(manifest)' in worker, "讀音檔沒有加入離線快取")
 

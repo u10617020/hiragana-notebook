@@ -37,6 +37,7 @@ let quickIndex = 0;
 let quickCorrect = 0;
 let quickStrokes = [];
 let activeQuickStroke = null;
+let quickAudioContext = null;
 
 QUICK_SCENES.forEach((scene) => {
   const card = document.createElement("button");
@@ -111,6 +112,31 @@ function normalizeRomaji(value) {
   return value.trim().toLowerCase().replace(/[\s'-]/g, "");
 }
 
+function playCorrectSound() {
+  const AudioContextType = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextType) return;
+  try {
+    quickAudioContext ||= new AudioContextType();
+    if (quickAudioContext.state === "suspended") quickAudioContext.resume().catch(() => {});
+    const start = quickAudioContext.currentTime;
+    [[659.25, 0], [880, 0.11]].forEach(([frequency, delay]) => {
+      const oscillator = quickAudioContext.createOscillator();
+      const volume = quickAudioContext.createGain();
+      const time = start + delay;
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      volume.gain.setValueAtTime(0.0001, time);
+      volume.gain.exponentialRampToValueAtTime(0.08, time + 0.015);
+      volume.gain.exponentialRampToValueAtTime(0.0001, time + 0.2);
+      oscillator.connect(volume).connect(quickAudioContext.destination);
+      oscillator.start(time);
+      oscillator.stop(time + 0.21);
+    });
+  } catch {
+    // Audio is optional; answering and writing still work if the device blocks sound.
+  }
+}
+
 function showQuickWriting() {
   quick.reading.textContent = quickScene.terms[quickIndex][1];
   quick.typeForm.hidden = true;
@@ -183,6 +209,7 @@ quick.typeForm.addEventListener("submit", (event) => {
   const expected = quickScene.terms[quickIndex][1];
   if (normalizeRomaji(quick.answer.value) === normalizeRomaji(expected)) {
     quickCorrect += 1;
+    playCorrectSound();
     showQuickWriting();
   } else {
     quick.feedback.textContent = "還差一點，再試一次；或點下方看答案。";

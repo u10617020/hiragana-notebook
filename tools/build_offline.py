@@ -34,7 +34,7 @@ for tag in (
 html = replace_once(html, '    <link rel="stylesheet" href="styles.css?v=7" />', f"    <style>\n{css}\n    </style>")
 html = replace_once(html, '        <a class="offline-download" href="offline.html" download="假名手帖-離線版.html">↓ 下載單檔離線版</a>\n', "")
 html = replace_once(html, '    <script src="app.js?v=6" defer></script>', f"    <script>\nwindow.__OFFLINE_AUDIO__ = {json.dumps(audio, ensure_ascii=False)};\n{app}\n    </script>")
-html = replace_once(html, '    <script src="quick.js?v=1" defer></script>', f"    <script>\n{quick}\n    </script>")
+html = replace_once(html, '    <script src="quick.js?v=2" defer></script>', f"    <script>\n{quick}\n    </script>")
 html = replace_once(html, '<title>假名手帖</title>', '<title>假名手帖（離線版）</title>')
 OUTPUT.write_text(html, encoding="utf-8")
 (ROOT / "offline.html").write_text(html, encoding="utf-8")
