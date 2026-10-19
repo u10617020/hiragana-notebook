@@ -1038,7 +1038,10 @@ h2 {
 .quick-entry small { margin-top: 4px; color: #d7edf4; font-size: 0.75rem; }
 .offline-download { display: block; min-height: 44px; margin-top: 10px; padding: 12px; color: var(--accent-dark); text-align: center; font-size: 0.82rem; font-weight: 800; }
 
-.scene-list { display: grid; gap: 12px; margin-top: 23px; }
+.quick-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px; padding: 5px; border-radius: 17px; background: #e9e1d5; }
+.quick-mode__button { min-height: 46px; border: 0; border-radius: 13px; background: transparent; color: var(--muted); font: inherit; font-weight: 800; cursor: pointer; }
+.quick-mode__button.is-active { background: var(--card); color: var(--ink); box-shadow: 0 2px 9px rgba(38, 58, 54, .11); }
+.scene-list { display: grid; gap: 12px; margin-top: 16px; }
 .scene-card {
   display: grid;
   grid-template-columns: 56px 1fr auto;
@@ -1069,18 +1072,23 @@ h2 {
   border-radius: 22px;
   background: var(--card);
 }
-.quick-meaning { color: var(--muted); font-size: 0.95rem; }
-.quick-word { margin: 7px 0 23px; font-family: var(--kana-font); font-size: clamp(2.6rem, 12vw, 4.2rem); font-weight: 400; overflow-wrap: anywhere; }
-.quick-type-form label { display: block; margin-bottom: 9px; font-weight: 800; }
-.quick-type-row { display: grid; grid-template-columns: 1fr 88px; gap: 8px; }
-.quick-type-row input { min-width: 0; min-height: 52px; padding: 0 12px; border: 1px solid var(--line); border-radius: 13px; background: #fff; color: var(--ink); font: inherit; }
-.quick-type-row button { min-height: 52px; border: 0; border-radius: 13px; background: var(--scene-color); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.quick-instruction { margin: 8px 0 17px; color: var(--muted); font-size: 0.86rem; }
+.quick-prompts { display: grid; gap: 16px; }
+.quick-prompts--passage { gap: 0; padding: 14px; border: 1px solid var(--line); border-radius: 15px; background: #fffdf8; }
+.quick-prompt__japanese { font-family: var(--kana-font); font-size: clamp(1.2rem, 5.3vw, 1.6rem); line-height: 2.4; overflow-wrap: anywhere; }
+.quick-prompt__japanese input { width: min(39vw, 140px); min-height: 48px; margin: 0 3px; padding: 4px 8px; border: 2px solid var(--scene-color); border-radius: 10px; background: #fff; color: var(--ink); font: 700 0.95rem system-ui, sans-serif; text-align: center; vertical-align: middle; }
+.quick-prompt__japanese input.is-wrong { border-color: var(--accent-dark); background: #fff3ef; }
+.quick-prompt__japanese input:disabled { color: var(--scene-color); background: var(--scene-soft); opacity: 1; }
+.quick-prompt__translation { margin-top: 2px; color: var(--muted); font-size: .81rem; }
+.quick-passage__translation { margin-top: 15px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: .81rem; line-height: 1.8; }
+.quick-check { width: 100%; min-height: 52px; margin-top: 22px; border: 0; border-radius: 13px; background: var(--scene-color); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
 .quick-feedback { min-height: 22px; margin-top: 11px; color: var(--muted); font-size: 0.82rem; }
 .quick-feedback--wrong { color: var(--accent-dark); }
 .quick-link { min-height: 44px; margin-top: 5px; padding: 0; border: 0; background: transparent; color: var(--scene-color); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
 .quick-write-stage[hidden], .quick-type-form[hidden], .quick-stage[hidden], .quick-finish[hidden] { display: none; }
+.quick-full-sentence { font-family: var(--kana-font); font-size: clamp(1.3rem, 5.5vw, 1.75rem); line-height: 1.65; }
 .quick-reading { margin-bottom: 5px; color: var(--scene-color); font-size: 1.25rem; font-weight: 800; }
-.quick-write-stage > p:nth-child(2) { color: var(--muted); font-size: 0.82rem; }
+.quick-write-stage > p:nth-child(3) { color: var(--muted); font-size: 0.82rem; }
 .quick-writing-square { width: 100%; margin: 15px 0; border: 1px solid var(--line); border-radius: 15px; background: linear-gradient(90deg, transparent calc(50% - .5px), var(--line) 50%, transparent calc(50% + .5px)), linear-gradient(transparent calc(50% - .5px), var(--line) 50%, transparent calc(50% + .5px)), #fffdf8; overflow: hidden; }
 .quick-writing-square canvas { display: block; width: 100%; aspect-ratio: 1.55; touch-action: none; }
 .quick-write-actions { display: grid; grid-template-columns: 1fr 1.5fr; gap: 9px; }

@@ -66,7 +66,10 @@ def main() -> None:
     require('entry.written = (entry.written || 0) + pads.length' in app, "書寫次數沒有逐格累計")
     for scene in ["classroom", "hospital", "station", "store"]:
         require(f'id: "{scene}"' in quick, f"缺少快速學習情境：{scene}")
-    require('normalizeRomaji(quick.answer.value)' in quick and 'pointerdown' in quick, "快速學習未包含拼音與手寫")
+    require(len(re.findall(r'\["[^"]*\{\}[^"]*", "[^"]+"\]', quick)) == 20, "四個情境各需 5 句填空題")
+    require('normalizeRomaji(input.value)' in quick and 'pointerdown' in quick, "快速學習未包含拼音與手寫")
+    require('quickMode === "passage"' in quick and 'quickScene.sentences[index]' in quick, "情境未支援單句與整段填空")
+    require(all(f'id="quick-mode-{mode}"' in html for mode in ["sentence", "passage"]), "缺少填空模式切換")
     require('playCorrectSound();' in quick and 'createOscillator()' in quick, "拼音答對時沒有離線可用的提示音")
     require('speechSynthesis' in app and 'ja-JP' in app, "日文朗讀功能不完整")
     audio_paths = json.loads((ROOT / "audio" / "manifest.json").read_text(encoding="utf-8"))
@@ -81,7 +84,7 @@ def main() -> None:
     require(manifest.get("display") == "standalone", "PWA display 必須是 standalone")
     require(manifest.get("start_url") == "./", "PWA start_url 不正確")
     cached_paths = set(re.findall(r'"(\./[^"\n]+)"', worker))
-    for path in ["./index.html", "./offline.html", "./styles.css?v=7", "./app.js?v=6", "./quick.js?v=2", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
+    for path in ["./index.html", "./offline.html", "./styles.css?v=8", "./app.js?v=6", "./quick.js?v=3", "./manifest.webmanifest", "./icons/icon.svg", "./audio/manifest.json"]:
         require(path in cached_paths, f"離線快取缺少：{path}")
     require('cache.addAll(manifest)' in worker, "讀音檔沒有加入離線快取")
 
@@ -90,7 +93,7 @@ def main() -> None:
     queried_ids |= set(re.findall(r'querySelector\("#([^"\)]+)"\)', quick))
     require(queried_ids <= html_ids, f"JavaScript 查詢了不存在的元素：{sorted(queried_ids - html_ids)}")
 
-    print("PASS: 假名、單詞、四個情境、書寫、讀音與離線快取檢查通過")
+    print("PASS: 假名、單詞、四個情境填空、書寫、讀音與離線快取檢查通過")
 
 
 if __name__ == "__main__":
